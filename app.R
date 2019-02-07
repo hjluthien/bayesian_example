@@ -41,12 +41,31 @@ ui <- fluidPage(
       # Input:  ----
       numericInput(inputId = "spacing",
                   label = "Enter spacing",
-                  value = 11,
+                  value = 1001,
                   min = 1,
                   max = 100000),
+      
       textInput(inputId = "data",
                     label = "Please enter own data",
-                value = "")),
+                value = ""),
+    
+    selectInput(inputId = "prior_dist",
+                label = "Select Prior dist",
+                choices = c("Flat", "Normal"),
+                selected = "Flat"),
+   
+    numericInput(inputId = "mean",
+                 label = "Please enter mean",
+                 value = 0.3,
+                 min = 0,
+                 max = 1),
+    
+    numericInput(inputId = "sd",
+                 label = "Please enter standard deviation",
+                 value = 0.005,
+                 min = 0,
+                 max = 1)),
+    
     
     # Main panel for displaying outputs ----
     mainPanel(
@@ -65,7 +84,17 @@ ui <- fluidPage(
        p("Bias = P(Heads)"), br(),
       
       # Output: Histogram ----
-      plotOutput("plot")#, br(),
+      plotOutput("plot"), br(),
+      
+      h3("Prior Probability (Assumptions)"), br(),
+      
+      h4("Strong priors (assumptions) will pull result towards the prior, 
+         where as weak ones will be more dominated by the data"),br(),
+      
+      h4("You can use any distribution as a prior - step, tophat, delta etc. 
+         Which distribution you need will depend on the nature of the problem you're trying to solve."), br(),
+      
+      plotOutput("prior_plot")
       
     )
   )
@@ -74,9 +103,21 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
   
-  result <- reactive({
+  bias_prior <- reactive({
     
-    bias_prior <- rep(1 / as.numeric(input$spacing), as.numeric(input$spacing))
+    if (input$prior_dist == "Flat") {
+      rep(1 / as.numeric(input$spacing), 
+                                  as.numeric(input$spacing))
+    
+  
+     } else {
+       dnorm(seq(0, 1, length.out = as.numeric(input$spacing)),
+             input$mean, input$sd)/sum(dnorm(seq(0, 1, length.out = as.numeric(input$spacing)),
+                                             input$mean, input$sd))
+       }
+  })
+  
+  result <- reactive({
   
   if (input$data != "") {
     
@@ -87,14 +128,28 @@ server <- function(input, output) {
     dataset <- c( rep("H", 140), rep("T", 110))
   
   }
-  estimate_bias(dataset, bias_prior)
+  estimate_bias(dataset, bias_prior())
   })
   
   output$plot <- renderPlot({ 
     validate(
       need(input$spacing > 1, "Please enter spacing greater than 1")
     )
-     plot(seq(0, 1, length.out = as.numeric(input$spacing)), result(), xlab = "Bias", ylab = "Probability") })
+     plot(seq(0, 1, length.out = as.numeric(input$spacing)), 
+          result(), 
+          xlab = "Bias", 
+          ylab = "Probability") })
+  
+  output$prior_plot <- renderPlot({
+    validate(
+      need(input$spacing > 1, "Please enter spacing greater than 1")
+    )
+    plot(seq(0, 1, length.out = as.numeric(input$spacing)), 
+         bias_prior(), 
+         xlab = "Bias", 
+         ylab = "Prior Probability")#, 
+        # ylim = c(0,1))
+  })
 }
 
 shinyApp(ui, server)
