@@ -11,7 +11,7 @@ On the RStudio console, run `shiny::runApp()`
 
 # Acknowledgements
 
-This example was taken from Think Bayes by Allen B. Downey. 
+This example was taken from [Think Bayes by Allen B. Downey](https://greenteapress.com/wp/think-bayes/). 
 
 # Resources
 
